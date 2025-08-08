@@ -15,7 +15,7 @@ const app = express();
 
 const PORT = process.env.PORT || 5000;
 
-const allowedHeaders = [process.env.ADMIN_FRONTEND_URL, process.env.FRONTEND_URL, 'http://localhost:5173', 'http://localhost:5174', 'https://mugishaprosper-seven.vercel.app']
+const allowedHeaders = [process.env.ADMIN_FRONTEND_URL, process.env.FRONTEND_URL, 'http://localhost:5173', 'http://localhost:5174', 'https://mugishaprosper-seven.vercel.app', 'https://adminpolo.vercel.app']
 
 const corsOptions = {
     origin: (origin, callback) => {
