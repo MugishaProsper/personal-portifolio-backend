@@ -13,22 +13,22 @@ import messageRouter from "./routes/message.routes.js";
 
 const app = express();
 
-const PORT = 5000 || process.env.PORT;
+const PORT = process.env.PORT || 5000;
 
-const allowedHeaders = [`${process.env.ADMIN_FRONTEND_URL}`, `${process.env.FRONTEND_URL}`]
+const allowedHeaders = [process.env.ADMIN_FRONTEND_URL, process.env.FRONTEND_URL, 'http://localhost:5173', 'http://localhost:5174', 'https://mugishaprosper-seven.vercel.app']
 
 const corsOptions = {
-    origin : (origin, callback) => {
-        if(!origin || allowedHeaders.includes(origin)){
+    origin: (origin, callback) => {
+        if (!origin || allowedHeaders.indexOf(origin) !== -1) {
             callback(null, true)
-        }else{
-            callback(new Error("Not allowed on this server"))
+        } else {
+            callback(new Error('Not allowed by CORS'))
         }
     },
-    methods : ["GET", "POST", "UPDATE", "DELETE", "PATCH"],
-    credentials : true,
-    // allowedHeaders : ["Content-Type", "Authorization"],
-    // optionsSuccessStatus : 200
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    optionsSuccessStatus: 200
 }
 
 app.use(express.json());
