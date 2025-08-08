@@ -13,7 +13,6 @@ export const generateTokenAndSetCookie = async (userId, res) => {
             sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            domain: process.env.NODE_ENV === "production" ? ".vercel.app" : "localhost"
         });
     } catch (error) {
         throw new Error(error)
