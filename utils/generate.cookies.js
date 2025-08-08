@@ -9,10 +9,11 @@ export const generateTokenAndSetCookie = async (userId, res) => {
         };
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '15d' });
         res.cookie('token', token, {
-            maxAge : 15 * 24 * 60 * 60 * 1000,
-            sameSite : "strict",
-            httpOnly : true,
-            secure : process.env.NODE_ENV === "production"
+            maxAge: 15 * 24 * 60 * 60 * 1000,
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            domain: process.env.NODE_ENV === "production" ? ".onrender.com" : "localhost"
         });
     } catch (error) {
         throw new Error(error)
