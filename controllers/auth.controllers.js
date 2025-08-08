@@ -1,0 +1,62 @@
+import User from "../models/user.model.js";
+import { hashPassword } from "../utils/hash.utils.js";
+import { generateTokenAndSetCookie } from "../utils/generate.cookies.js";
+import bcrypt from "bcryptjs";
+
+export const register = async (req, res) => {
+    const { fullname, username, email, password } = req.body;
+    try {
+        const existing_user = await User.findOne({ email: email });
+        if (existing_user) {
+            return res.status(403).json({ message: "User already exists" })
+        }
+        const hashedPassword = await hashPassword(password)
+        const user = new User({ fullname, email, username, password: hashedPassword })
+        user.statistics.activity.push(
+            {
+                type: "CREATE",
+                message: "Account creation successful",
+                timestamps: Date.now()
+            }, {
+            type: "LOGIN",
+            description: "Login successful",
+            timestamps: Date.now()
+        });
+        await user.save();
+        const token = await generateTokenAndSetCookie(user._id, res)
+        return res.status(201).json({ "message": "Account created successfully", "user" : user.getProfile(), "token" : token })
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ message: "Internal server error" })
+    }
+};
+
+export const login = async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const user = await User.findOne({ email: email });
+        if (!user) return res.status(404).json({ message: "User not found" });
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) return res.status(403).json({ message: "Invalid password" });
+        user.statistics.activity.push({
+            type: "LOGIN",
+            description: "Login successful",
+            timestamps: Date.now()
+        })
+        await user.save();
+        await generateTokenAndSetCookie(user._id, res)
+        return res.status(200).send({ message: "Login successful", user : user.getProfile() })
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ message: "Internal Server error" })
+    }
+};
+
+export const logout = async (req, res) => {
+    try {
+        res.clearCookie()
+           .status(200).json({ message : "Logged out"})
+    } catch (error) {
+        return res.status(500).json({ message : "Internal server error" })
+    }
+}
