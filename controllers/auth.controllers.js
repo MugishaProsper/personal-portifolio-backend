@@ -24,7 +24,7 @@ export const register = async (req, res) => {
         });
         await user.save();
         await generateTokenAndSetCookie(user._id, res)
-        return res.status(201).json({ message: "Account created successfully", user: user.getProfile(), token })
+        return res.status(201).json({ message: "Account created successfully", user: user.getProfile() })
     } catch (error) {
         console.log(error)
         return res.status(500).json({ message: "Internal server error" })
@@ -44,10 +44,10 @@ export const login = async (req, res) => {
             timestamps: Date.now()
         })
         await user.save();
-        const token = await generateTokenAndSetCookie(user._id, res)
-        return res.status(200).json({ message: "Login successful", user: user.getProfile(), token })
+        await generateTokenAndSetCookie(user._id, res)
+        return res.status(200).json({ message: "Login successful", user: user.getProfile() })
     } catch (error) {
-        console.log(error)
+        console.log(error);
         res.status(500).json({ message: "Internal Server error" })
     }
 };
