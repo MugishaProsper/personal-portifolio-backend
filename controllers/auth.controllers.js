@@ -2,6 +2,7 @@ import User from "../models/user.model.js";
 import { hashPassword } from "../utils/hash.utils.js";
 import { generateTokenAndSetCookie } from "../utils/generate.cookies.js";
 import bcrypt from "bcryptjs";
+import rateLimit from "express-rate-limit";
 
 export const register = async (req, res) => {
     const { fullname, username, email, password } = req.body;
@@ -9,6 +10,11 @@ export const register = async (req, res) => {
         const existing_user = await User.findOne({ email: email });
         if (existing_user) {
             return res.status(403).json({ message: "User already exists" })
+        }
+        // basic password policy: min 8, at least one letter and number
+        const strong = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+\-=]{8,}$/;
+        if (!strong.test(password)) {
+            return res.status(400).json({ message: "Password must be at least 8 chars and include letters and numbers" });
         }
         const hashedPassword = await hashPassword(password)
         const user = new User({ fullname, email, username, password: hashedPassword })

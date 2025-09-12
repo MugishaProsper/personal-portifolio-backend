@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 
 const userSchema = mongoose.Schema({
     fullname: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    username: { type: String, unique: true },
+    email: { type: String, required: true, unique: true, index: true },
+    username: { type: String, unique: true, sparse: true, index: true },
     password: { type: String, required: true },
     statistics: {
         projects: {
@@ -27,10 +27,12 @@ const userSchema = mongoose.Schema({
         activity: [{
             type: { type: String, enum: ["LOGIN", "UPDATE", "SUBSCRIPTION", "CREATE"] },
             description: { type: String },
-            timestamps: { type: Date, default: Date.now() }
+            createdAt: { type: Date, default: Date.now }
         }]
     }
 }, { timestamps: true });
+
+userSchema.index({ createdAt: -1 });
 
 userSchema.methods.getProfile = function () {
     return {

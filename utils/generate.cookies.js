@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
-import { configDotenv } from "dotenv";
-configDotenv()
+import { loadEnv } from "../config/env.config.js";
+loadEnv()
 
 export const generateTokenAndSetCookie = async (userId, res) => {
     try {

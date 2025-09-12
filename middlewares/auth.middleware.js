@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
-import { configDotenv } from "dotenv";
-configDotenv()
+import { loadEnv } from "../config/env.config.js";
+loadEnv()
 
 export const authorize = (req, res, next) => {
     let token = req.cookies.token;

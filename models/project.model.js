@@ -5,6 +5,7 @@ const projectSchema = mongoose.Schema({
     projectName: { type: String, required: true },
     projectUrl: { type: String, required: true },
     sampleImage: { type: String, required: true },
+    sampleImages: [{ type: String }],
     projectDescription: { type: String, required: true },
     categories: [{ type: String }],
     technologies: [{ type: String }],
@@ -18,6 +19,8 @@ const projectSchema = mongoose.Schema({
         }]
     }
 }, { timestamps: true });
+
+projectSchema.index({ createdAt: -1 });
 
 projectSchema.methods.getProjectStatistics = async function (limit = 5) {
     try {
@@ -65,7 +68,7 @@ projectSchema.methods.unlikeProject = async function () {
 projectSchema.methods.getProjectComments = async function () {
     try {
         if (!this.statistics.comments || !Array.isArray(this.statistics.comments)) return [];
-        return this.statistics.comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        return this.statistics.comments.sort((a, b) => new Date(b.timestamps) - new Date(a.timestamps));
     } catch (error) {
         throw new Error(error);
     }

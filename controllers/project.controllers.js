@@ -1,25 +1,37 @@
 import Project from "../models/project.model.js";
 import User from "../models/user.model.js";
-import { uploadFileToCloudinary } from "../utils/image.upload.js";
+import { uploadFileToCloudinary, uploadFilesToCloudinary } from "../utils/image.upload.js";
 
 export const createProject = async (req, res) => {
     const { id } = req.user;
     let { projectName, projectUrl, projectDescription, categories, technologies, projectStatus } = req.body;
-    categories = categories ? JSON.parse(categories) : [];
-    technologies = technologies ? JSON.parse(technologies) : []
-    console.log(typeof(categories), categories);
-    console.log(typeof(technologies), categories)
-    if(!req.file){
-        return res.status(404).json({ message : "File not found" });
+    try { categories = typeof categories === 'string' ? JSON.parse(categories) : (categories || []); } catch { }
+    try { technologies = typeof technologies === 'string' ? JSON.parse(technologies) : (technologies || []); } catch { }
+    const files = {
+        single: req.files?.sampleImage?.[0],
+        multiple: req.files?.sampleImages || []
+    };
+    if (!files.single && files.multiple.length === 0) {
+        return res.status(400).json({ message: "No files provided" });
     }
     try {
-        const { url } = await uploadFileToCloudinary(req.file);
-        if(!url) return res.status(403).json({ message : "File upload failed" });
+        let url = "";
+        let urls = [];
+        if (files.single) {
+            const result = await uploadFileToCloudinary(files.single);
+            url = result?.url;
+        }
+        if (files.multiple.length) {
+            urls = await uploadFilesToCloudinary(files.multiple);
+            if (!url && urls.length > 0) url = urls[0];
+        }
+        if (!url) return res.status(403).json({ message: "File upload failed" });
         const project = new Project({
             user: id,
             projectName,
             projectUrl,
-            sampleImage : url,
+            sampleImage: url,
+            sampleImages: urls,
             projectDescription,
             categories,
             technologies,
@@ -28,9 +40,9 @@ export const createProject = async (req, res) => {
         await project.save();
         const user = await User.findById(id);
         user.statistics.activity.push({
-            type :"CREATE",
-            description : "Created project succesfully",
-            timestamps : Date.now()
+            type: "CREATE",
+            description: "Created project succesfully",
+            timestamps: Date.now()
         })
         return res.status(200).json({ message: "Project created" })
     } catch (error) {
@@ -41,12 +53,14 @@ export const createProject = async (req, res) => {
 
 export const getAllProjects = async (req, res) => {
     try {
-        const projects = await Project.find();
-        if (!projects || projects.length === null) return res.status(404).json({ message: "No projects found" });
-        projects.forEach(project => {
-            project = project.getProjectDetails();
-        });
-        return res.status(200).json({ message: "Projects found", projects: projects })
+        const { page = 1, limit = 20 } = req.query;
+        const skip = (Number(page) - 1) * Number(limit);
+        const [items, total] = await Promise.all([
+            Project.find().sort({ createdAt: -1 }).skip(skip).limit(Number(limit)),
+            Project.countDocuments()
+        ]);
+        const transformed = await Promise.all(items.map(p => p.getProjectDetails()));
+        return res.status(200).json({ message: "Projects found", projects: transformed, pagination: { total, page: Number(page), limit: Number(limit) } })
     } catch (error) {
         console.log(error)
         return res.status(500).json({ message: "Internal server error" })
@@ -77,11 +91,43 @@ export const getProjectComments = async (req, res) => {
     }
 }
 
+export const addProjectComment = async (req, res) => {
+    const { projectId } = req.params;
+    const { message } = req.body;
+    try {
+        const project = await Project.findById(projectId);
+        if (!project) return res.status(404).json({ message: "Project not found" });
+        project.statistics.comments.push({ message, timestamps: Date.now() });
+        project.statistics.comments_count += 1;
+        await project.save();
+        return res.status(201).json({ message: "Comment added" });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+export const deleteProjectComment = async (req, res) => {
+    const { projectId, commentId } = req.params;
+    try {
+        const project = await Project.findById(projectId);
+        if (!project) return res.status(404).json({ message: "Project not found" });
+        const subdoc = project.statistics.comments.id(commentId);
+        if (!subdoc) return res.status(404).json({ message: "Comment not found" });
+        subdoc.remove();
+        project.statistics.comments_count = Math.max(0, project.statistics.comments_count - 1);
+        await project.save();
+        return res.status(200).json({ message: "Comment deleted" });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
 export const updateProject = async (req, res) => {
     const { id } = req.user;
+    const { projectId } = req.params;
     const { projectName, projectUrl, sampleImage, projectDescription, categories, projectStatus, technologies } = req.body;
     try {
-        const project = await Project.findOneAndUpdate({ user: id }, { projectName: projectName, projectUrl: projectUrl, sampleImage: sampleImage, projectDescription: projectDescription, categories: categories, technologies: technologies, projectStatus: projectStatus });
+        const project = await Project.findOneAndUpdate({ _id: projectId, user: id }, { projectName: projectName, projectUrl: projectUrl, sampleImage: sampleImage, projectDescription: projectDescription, categories: categories, technologies: technologies, projectStatus: projectStatus }, { new: true });
         if (!project) return res.status(404).json({ message: "Project not found" });
         return res.status(200).json({ message: "Project updated" });
     } catch (error) {
@@ -91,8 +137,9 @@ export const updateProject = async (req, res) => {
 
 export const deleteProject = async (req, res) => {
     const { id } = req.user;
+    const { projectId } = req.params;
     try {
-        const project = await Project.findOneAndDelete({ user: id });
+        const project = await Project.findOneAndDelete({ _id: projectId, user: id });
         if (!project) return res.status(404).json({ message: "Project not found" });
         return res.status(200).json({ message: "Project deleted" });
     } catch (error) {
@@ -106,6 +153,7 @@ export const likeProject = async (req, res) => {
         const project = await Project.findById(projectId);
         if (!project) return res.status(404).json({ message: "Project not found" });
         await project.likeProject();
+        await project.save();
         return res.status(200).json({ message: "Project liked" })
     } catch (error) {
         return res.status(500).json({ message: "Internal server error" });
@@ -118,8 +166,10 @@ export const unlikeProject = async (req, res) => {
         const project = await Project.findById(projectId);
         if (!project) return res.status(404).json({ message: "Project not found" });
         await project.unlikeProject();
+        if (project.statistics.likes < 0) project.statistics.likes = 0;
+        await project.save();
         return res.status(200).json({ message: "Project unliked" })
     } catch (error) {
-
+        return res.status(500).json({ message: "Internal server error" });
     }
 }
