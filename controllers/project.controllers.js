@@ -7,31 +7,30 @@ export const createProject = async (req, res) => {
     let { projectName, projectUrl, projectDescription, categories, technologies, projectStatus } = req.body;
     try { categories = typeof categories === 'string' ? JSON.parse(categories) : (categories || []); } catch { }
     try { technologies = typeof technologies === 'string' ? JSON.parse(technologies) : (technologies || []); } catch { }
-    const files = {
-        single: req.files?.sampleImage?.[0],
-        multiple: req.files?.sampleImages || []
-    };
-    if (!files.single && files.multiple.length === 0) {
+    const allFiles = [
+        ...(req.files?.sampleImage || []),
+        ...(req.files?.sampleImages || []),
+        ...(req.files?.images || [])
+    ];
+    if (allFiles.length === 0) {
         return res.status(400).json({ message: "No files provided" });
     }
     try {
         let url = "";
         let urls = [];
-        if (files.single) {
-            const result = await uploadFileToCloudinary(files.single);
+        if (allFiles.length === 1) {
+            const result = await uploadFileToCloudinary(allFiles[0]);
             url = result?.url;
-        }
-        if (files.multiple.length) {
-            urls = await uploadFilesToCloudinary(files.multiple);
-            if (!url && urls.length > 0) url = urls[0];
+        } else if (allFiles.length > 1) {
+            urls = await uploadFilesToCloudinary(allFiles);
+            if (urls.length > 0) url = urls[0];
         }
         if (!url) return res.status(403).json({ message: "File upload failed" });
         const project = new Project({
             user: id,
             projectName,
             projectUrl,
-            sampleImage: url,
-            sampleImages: urls,
+            sampleImages: urls || [url],
             projectDescription,
             categories,
             technologies,
@@ -125,9 +124,9 @@ export const deleteProjectComment = async (req, res) => {
 export const updateProject = async (req, res) => {
     const { id } = req.user;
     const { projectId } = req.params;
-    const { projectName, projectUrl, sampleImage, projectDescription, categories, projectStatus, technologies } = req.body;
+    const { projectName, projectUrl, sampleImages, projectDescription, categories, projectStatus, technologies } = req.body;
     try {
-        const project = await Project.findOneAndUpdate({ _id: projectId, user: id }, { projectName: projectName, projectUrl: projectUrl, sampleImage: sampleImage, projectDescription: projectDescription, categories: categories, technologies: technologies, projectStatus: projectStatus }, { new: true });
+        const project = await Project.findOneAndUpdate({ _id: projectId, user: id }, { projectName: projectName, projectUrl: projectUrl, sampleImages: sampleImages, projectDescription: projectDescription, categories: categories, technologies: technologies, projectStatus: projectStatus }, { new: true });
         if (!project) return res.status(404).json({ message: "Project not found" });
         return res.status(200).json({ message: "Project updated" });
     } catch (error) {

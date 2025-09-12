@@ -4,8 +4,7 @@ const projectSchema = mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     projectName: { type: String, required: true },
     projectUrl: { type: String, required: true },
-    sampleImage: { type: String, required: true },
-    sampleImages: [{ type: String }],
+    sampleImages: [{ type: String, required: true }],
     projectDescription: { type: String, required: true },
     categories: [{ type: String }],
     technologies: [{ type: String }],
@@ -34,17 +33,17 @@ projectSchema.methods.getProjectStatistics = async function (limit = 5) {
 projectSchema.methods.getProjectDetails = async function () {
     try {
         return {
-            _id : this._id,
-            projectName : this.projectName,
-            projectDescription : this.projectDescription,
-            projectUrl : this.projectUrl,
-            projectStatus : this.projectStatus,
-            sampleImage : this.sampleImage,
-            categories : this.categories,
-            technologies : this.technologies,
-            likes : this.statistics.likes,
-            comments_count : this.statistics.comments_count,
-            createdAt : this.createdAt
+            _id: this._id,
+            projectName: this.projectName,
+            projectDescription: this.projectDescription,
+            projectUrl: this.projectUrl,
+            projectStatus: this.projectStatus,
+            sampleImages: this.sampleImages,
+            categories: this.categories,
+            technologies: this.technologies,
+            likes: this.statistics.likes,
+            comments_count: this.statistics.comments_count,
+            createdAt: this.createdAt
         }
     } catch (error) {
         throw new Error(error);

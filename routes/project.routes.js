@@ -6,14 +6,17 @@ import { validate, schemas } from "../middlewares/validate.middleware.js";
 
 const storage = multer.memoryStorage();
 const allowedMimes = [
-  'image/jpeg', 'image/png', 'image/webp', 'image/gif'
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'
 ];
 const upload = multer({
   storage,
-  limits: { fileSize: 2 * 1024 * 1024, files: 5 },
+  limits: { fileSize: 2 * 1024 * 1024, files: 6 },
   fileFilter: (req, file, cb) => {
-    if (allowedMimes.includes(file.mimetype)) return cb(null, true);
-    return cb(new Error('Invalid file type'));
+    const isImage = file.mimetype?.startsWith('image/');
+    if (isImage || allowedMimes.includes(file.mimetype)) return cb(null, true);
+    const err = new Error('Invalid file type');
+    err.code = 'INVALID_FILE_TYPE';
+    return cb(err);
   }
 });
 
@@ -21,8 +24,16 @@ const upload = multer({
 const projectRouter = express.Router();
 
 projectRouter.get("/", getAllProjects);
-projectRouter.post("/", upload.fields([{ name: 'sampleImage', maxCount: 1 }, { name: 'sampleImages', maxCount: 5 }]), authorize, validate(schemas.project.create), createProject);
-projectRouter.put("/:projectId", upload.fields([{ name: 'sampleImage', maxCount: 1 }, { name: 'sampleImages', maxCount: 5 }]), authorize, validate(schemas.project.update), updateProject);
+projectRouter.post("/", upload.fields([
+  { name: 'sampleImage', maxCount: 5 },
+  { name: 'sampleImages', maxCount: 5 },
+  { name: 'images', maxCount: 5 }
+]), authorize, validate(schemas.project.create), createProject);
+projectRouter.put("/:projectId", upload.fields([
+  { name: 'sampleImage', maxCount: 5 },
+  { name: 'sampleImages', maxCount: 5 },
+  { name: 'images', maxCount: 5 }
+]), authorize, validate(schemas.project.update), updateProject);
 projectRouter.delete("/:projectId", authorize, deleteProject);
 
 projectRouter.get("/:projectId", getProject);
