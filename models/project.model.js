@@ -34,6 +34,7 @@ projectSchema.methods.getProjectStatistics = async function (limit = 5) {
 projectSchema.methods.getProjectDetails = async function () {
     try {
         return {
+            _id : this._id,
             projectName : this.projectName,
             projectDescription : this.projectDescription,
             projectUrl : this.projectUrl,
@@ -42,7 +43,8 @@ projectSchema.methods.getProjectDetails = async function () {
             categories : this.categories,
             technologies : this.technologies,
             likes : this.statistics.likes,
-            comments_count : this.statistics.comments_count
+            comments_count : this.statistics.comments_count,
+            createdAt : this.createdAt
         }
     } catch (error) {
         throw new Error(error);

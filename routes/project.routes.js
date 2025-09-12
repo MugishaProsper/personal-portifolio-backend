@@ -1,5 +1,5 @@
 import express from "express";
-import { createProject, deleteProject, getAllProjects, getProject, likeProject, unlikeProject, updateProject, addProjectComment, deleteProjectComment } from "../controllers/project.controllers.js";
+import { createProject, deleteProject, getAllProjects, getProject, likeProject, unlikeProject, updateProject, addProjectComment, deleteProjectComment, getProjectComments } from "../controllers/project.controllers.js";
 import { authorize } from "../middlewares/auth.middleware.js";
 import multer from "multer";
 import { validate, schemas } from "../middlewares/validate.middleware.js";
