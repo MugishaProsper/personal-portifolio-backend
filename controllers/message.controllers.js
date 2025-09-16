@@ -20,9 +20,9 @@ export const getAllMessages = async (req, res) => {
 };
 
 export const sendMessage = async (req, res) => {
-    const { name, email, subject, message } = req.body.message;
+    const { name, email, subject, message } = req.body;
     try {
-        await Message.create({ name, email, subject, message, status: { read: false, unread_count: 1 }, priority: 'high' });
+        await Message.create({ name : name, email : email, subject : subject, message : message, status: { read: false, unread_count: 1 }, priority: 'high' });
         return res.status(200).json({ message: "Message sent. Thank you for reaching out" })
     } catch (error) {
         console.log(error);

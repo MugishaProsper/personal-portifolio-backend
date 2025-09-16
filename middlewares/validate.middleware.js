@@ -80,12 +80,10 @@ export const schemas = {
   message: {
     send: Joi.object({
       body: Joi.object({
-        message: Joi.object({
           name: Joi.string().min(2).max(100).required(),
           email: Joi.string().email().required(),
           subject: Joi.string().min(2).max(200).allow(""),
           message: Joi.string().min(1).max(2000).required()
-        }).required()
       }),
       params: Joi.object({}),
       query: Joi.object({})
